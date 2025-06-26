@@ -1,2 +1,2 @@
 # OSRE
-Open Source Resource Estimation for Shor's Algorithm
+Open Source Resource Estimation for Shor's Algorithm.
