@@ -4,6 +4,7 @@
 from typing import Dict
 from qualtran import Bloq, BloqBuilder, Signature, Register, SoquetT, QUInt
 from qualtran.bloqs.data_loading.qrom import QROM
+import numpy as np
 
 class RSA_GE(Bloq):
     """
@@ -38,12 +39,18 @@ class RSA_GE(Bloq):
         return {'ew': ew, 'x': x}
 
     def ekera_hastad_component(self, bb: 'BloqBuilder', g: int, e_bitsize: int, ew: 'Soquet', x: 'Soquet'):
-        e_bits = list(range(e_bitsize))
         for i in range(0, e_bitsize, self.ew):
             gi = pow(g, 2**(e_bitsize-1-i), self.N)
-            if len(e_bits[i:i+self.ew]) == self.ew:
-                ew, x = bb.add(TimesExpMod(g=gi, N=self.N, e_bitsize=len(e_bits[i:i+self.ew]), x_bitsize=self.N_bitsize), e=ew, x=x)
-            ew = bb.add(SemiclassicalQFT(e_bitsize, self.ew, i), m=ew)
+            if (e_bitsize-i < self.ew): # irregular last group
+                last_e_bitsize = e_bitsize-i
+                ews = bb.split(ew)
+                ew_part = bb.join(ews[0:last_e_bitsize])
+                ew_part, x = bb.add(TimesExpMod(g=gi, N=self.N, e_bitsize=last_e_bitsize, x_bitsize=self.N_bitsize), e=ew_part, x=x)
+                ew_part = bb.add(SemiclassicalQFT(e_bitsize, last_e_bitsize, i), m=ew_part)
+                ew = bb.join(np.concatenate((bb.split(ew_part), ews[last_e_bitsize:])))
+            else:
+                ew, x = bb.add(TimesExpMod(g=gi, N=self.N, e_bitsize=self.ew, x_bitsize=self.N_bitsize), e=ew, x=x)
+                ew = bb.add(SemiclassicalQFT(e_bitsize, self.ew, i), m=ew)
         return ew, x
 
 class SemiclassicalQFT(Bloq):
