@@ -4,6 +4,7 @@
 from typing import Dict
 from qualtran import Bloq, BloqBuilder, Signature, Register, SoquetT, QUInt
 from qualtran.bloqs.data_loading.qrom import QROM
+from qualtran.bloqs.mod_arithmetic import CModMulK
 import numpy as np
 
 class RSA_GE(Bloq):
@@ -72,8 +73,8 @@ class SemiclassicalQFT(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder', m: 'Soquet') -> Dict[str, 'SoquetT']:
         # add Rz(m_previous), Hadamard, measure Z outcome m
         from qualtran.bloqs.basic_gates import Identity
-        m = bb.add(Identity(self.m))
-        return {'m', m}
+        m = bb.add(Identity(self.m), q=m)
+        return {'m': m}
 
     def with_recycling(self):
         return NotImplemented
@@ -104,5 +105,6 @@ class TimesExpMod(Bloq):
 
 if __name__ == "__main__":
     from qualtran.drawing import show_bloq
-    test = RSA_GE(N=89*97, g=7, ew=3, mw=2).decompose_bloq()
+    test = RSA_GE(N=2*3, g=5, ew=3, mw=2).decompose_bloq()
     show_bloq(test)
+    print(test.flatten().bloq_counts())
